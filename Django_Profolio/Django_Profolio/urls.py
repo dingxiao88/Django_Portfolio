@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from . import views
+import blog.views
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -23,4 +24,5 @@ from django.conf import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home),   #用户进入网址
+    path('blog/', blog.views.blog_page),   #用户进入网址
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
