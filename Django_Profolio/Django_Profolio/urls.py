@@ -19,10 +19,15 @@ from . import views
 from django.conf.urls.static import static
 from django.conf import settings
 
+from django.views.generic import TemplateView
+
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('dingxiao/', admin.site.urls),
     path('', views.home),   #用户进入网址
     path('blog/', include('blog.urls')),   #用户进入网址
+    path('test/', TemplateView.as_view(template_name="about.html"), name="test"),   #我的测试
+    path('watch/', TemplateView.as_view(template_name="watch.html"), name="watch"),   #监控
+    path('ueditor/',include('DjangoUeditor.urls' )),
     # path('blog/', blog.views.blog_page),   #用户进入网址
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

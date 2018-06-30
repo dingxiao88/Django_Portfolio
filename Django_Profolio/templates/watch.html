@@ -1,0 +1,144 @@
+
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Start Page</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js' type='text/javascript'></script>
+    <script src="http://code.jquery.com/jquery-1.4.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/16.3.5/Tween.min.js"></script>
+<!--     // <script src="jquery.min.js"></script> -->
+    <!-- // <script src="tween-min.js"></script> -->
+    <script src="{% static 'steelseries-min.js'%}"></script>
+
+    <script>
+
+          function publish(topic, message) {
+              message = new Paho.MQTT.Message(message);
+              message.destinationName = topic;
+              message.qos = 0;
+              client.send(message);
+          }
+
+          function Send_Msg(){
+
+            var Msg=document.getElementById("msg").value;
+
+            publish("dx",Msg);
+            //alert("ok"+Msg);
+
+            //@for py send pic
+            // client.publish('image', base64.b64encode(encimg), qos=0, retain=False)
+          }
+    </script>
+
+  </head>
+
+  <body onload='Connect();'>
+
+    <label>当前温度</label>
+    <meter max="100" low="60" high="100" value="70" id="meter"></meter>
+    <p>
+    <label>发送命令</label>
+    <input id="msg"/><button id="Send" onclick="Send_Msg()">发送</button>
+    </p>
+    <h1>实时图像</h1>
+    <div id='container'></div>
+    <canvas id="gaugeCanvas" width="100" height="100"/>
+
+    <script type='text/javascript'>
+// put here the mqtt connections parameters
+    var streams = [
+        [ "www.dx1023.com", 8884, "clientId", "pic", "rcr_" + createUUID() ],
+        // [ "broker.hivemq.com", 8000, "/mqtt", "demos/rcr/video2", "rcr_" + createUUID() ],
+        // [ "broker.hivemq.com", 8000, "/mqtt", "demos/rcr/video3", "rcr_" + createUUID() ],
+    ];
+    var tempGauge;
+
+
+    function createUUID() {
+        var s = [];
+        var hexDigits = "0123456789abcdef";
+        for (var i = 0; i < 36; i++) {
+            s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+        }
+        s[14] = "4";  // bits 12-15 of the time_hi_and_version field to 0010
+        s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);  // bits 6-7 of the clock_seq_hi_and_reserved to 01
+        s[8] = s[13] = s[18] = s[23] = "-";
+
+        var uuid = s.join("");
+        return uuid;
+    }
+    
+
+    function Connect()
+    {
+          tempGauge = new steelseries.Radial('gaugeCanvas', {
+            gaugeType: steelseries.GaugeType.TYPE4,
+            minValue:-15,
+            maxValue:50,
+            size: 250,
+            frameDesign: steelseries.FrameDesign.STEEL,
+            knobStyle: steelseries.KnobStyle.STEEL,
+            pointerType: steelseries.PointerType.TYPE6,
+            lcdDecimals: 0,
+            section: null,
+            area: null,
+            titleString: 'Temperature',
+            unitString: 'C',
+            threshold: 100,
+            lcdVisible: true,
+            lcdDecimals: 2
+             });
+          tempGauge.setValue(''); //gives a blank display 'NaN' until broker has connected
+          tempGauge.setLedColor(steelseries.LedColor.RED_LED); //set the LED RED until connected
+
+
+        for( i=0; i<streams.length; i++ ){
+            img = document.createElement( 'img' );
+            img.width = "640";
+            img.height = "480";
+            img.src='';
+            img.id = 'image_' + i;
+            container = document.getElementById( 'container' );
+            container.appendChild( img );
+
+            stream = streams[i]
+            // client = new Paho.MQTT.Client( stream[0],stream[1], stream[2], stream[4] );
+            client = new Paho.MQTT.Client( stream[0],stream[1], stream[2]);
+            client.idx = i
+
+            client.onMessageArrived = function ( message ){
+
+              var topic = message.destinationName;
+
+              if(topic == "pic")
+              {
+                data = message.payloadBytes;
+                img = document.getElementById( 'image_' + this.idx )
+                img.src = 'data:image/png;base64,' +  btoa( String.fromCharCode.apply( null, data ) );
+              }
+
+              else if(topic == "dx")
+              {
+                document.querySelector("#meter").value = message.payloadString; //更新显示
+                tempGauge.setValue(message.payloadString);
+                tempGauge.setLedColor(steelseries.LedColor.GREEN_LED); //change status LED to GREEN on broker connection
+              }
+
+            }.bind( client );
+
+            function onConnect(){
+                stream = streams[ this.idx ]
+                this.subscribe("dx");
+                this.subscribe("pic");
+            }
+
+            client.connect( { onSuccess: onConnect.bind( client ) } );
+        }
+    }
+    </script>
+  </body>
+
+</html>
