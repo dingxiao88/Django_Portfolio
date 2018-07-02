@@ -4,7 +4,7 @@ from .models import Blog
 
 def blog_page(request):
 	blogs = Blog.objects
-	return render(request, 'blog.html', {'blogs':blogs})
+	return render(request, 'blog_new.html', {'blogs':blogs})
 
 
 def blog_text(request,blog_id):
