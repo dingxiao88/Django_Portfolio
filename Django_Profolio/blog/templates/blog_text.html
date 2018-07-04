@@ -12,4 +12,6 @@
 </div>
 
 <br>
-<pre style="width:650px;font-size:150%;margin:20px auto;">{% autoescape off %} {{blog.text}} {% endautoescape %}</pre>
+<pre style="width:650px;font-size:150%;margin:20px auto;">{% autoescape off %} {{blog.text|safe}} {% endautoescape %}</pre>
+
+
